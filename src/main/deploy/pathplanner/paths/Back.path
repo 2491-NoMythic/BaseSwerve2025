@@ -24,8 +24,8 @@
         "y": 7.0
       },
       "nextControl": null,
-      "isLocked": false,
-      "linkedName": null
+      "isLocked": true,
+      "linkedName": "Forward"
     }
   ],
   "rotationTargets": [],

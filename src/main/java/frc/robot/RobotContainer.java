@@ -4,6 +4,12 @@
 
 package frc.robot;
 
+import static frc.robot.settings.Constants.DriveConstants.k_THETA_D;
+import static frc.robot.settings.Constants.DriveConstants.k_THETA_I;
+import static frc.robot.settings.Constants.DriveConstants.k_THETA_P;
+import static frc.robot.settings.Constants.DriveConstants.k_XY_D;
+import static frc.robot.settings.Constants.DriveConstants.k_XY_I;
+import static frc.robot.settings.Constants.DriveConstants.k_XY_P;
 import static frc.robot.settings.Constants.PS4Driver.DEADBAND_LARGE;
 import static frc.robot.settings.Constants.PS4Driver.DEADBAND_NORMAL;
 import static frc.robot.settings.Constants.PS4Driver.NO_INPUT;
@@ -12,13 +18,18 @@ import static frc.robot.settings.Constants.PS4Driver.Y_AXIS;
 import static frc.robot.settings.Constants.PS4Driver.Z_AXIS;
 import static frc.robot.settings.Constants.PS4Driver.Z_ROTATE;
 
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
 import com.pathplanner.lib.auto.AutoBuilder;
+import com.pathplanner.lib.config.RobotConfig;
+import com.pathplanner.lib.controllers.PPHolonomicDriveController;
 
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.geometry.Translation2d;
+import edu.wpi.first.wpilibj.DriverStation;
+import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import edu.wpi.first.wpilibj.PS4Controller;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
@@ -86,8 +97,35 @@ public class RobotContainer {
     autoInit();
     configureBindings();
   }
+  private void configureDriveTrain() {
+    try {
+      AutoBuilder.configure(
+          drivetrain::getPose, // Pose2d supplier
+          drivetrain::resetOdometry, // Pose2d consumer, used to reset odometry at the beginning of auto
+          drivetrain::getChassisSpeeds,
+          (speeds) -> drivetrain.drive(speeds),
+          new PPHolonomicDriveController(
+              new com.pathplanner.lib.config.PIDConstants(
+                  k_XY_P, k_XY_I,
+                  k_XY_D), // PID constants to correct for translation error (used to create the X
+              // and Y PID controllers)
+              new com.pathplanner.lib.config.PIDConstants(
+                  k_THETA_P, k_THETA_I,
+                  k_THETA_D) // PID constants to correct for rotation error (used to create the
+          // rotation controller)
+          ),
+          RobotConfig.fromGUISettings(),
+          () -> DriverStation.getAlliance().get().equals(Alliance.Red),
+          drivetrain);
+    } catch (org.json.simple.parser.ParseException a) {
+      System.out.println("got ParseException trying to configure AutoBuilder");
+    } catch (IOException b) {
+      System.out.println("got IOException thrown trying to configure autobuilder " + b.getMessage());
+    }
+  }
 
   private void autoInit() {
+      configureDriveTrain();
       autoChooser = AutoBuilder.buildAutoChooser();
       SmartDashboard.putData("Auto Chooser", autoChooser);
   }
@@ -105,6 +143,7 @@ public class RobotContainer {
     }
     return NO_INPUT;
   }
+  
 
   /** Takes both axis of a joystick, returns a double from 0-1 */
   private double getJoystickMagnitude(int horizontalAxis, int verticalAxis) {
