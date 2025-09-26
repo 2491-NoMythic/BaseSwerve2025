@@ -171,10 +171,7 @@ public class DrivetrainSubsystem extends SubsystemBase {
    * gets the angle of odometer reading, but adds 180 degrees if we are on red alliance. this is useful for whne using ChassisSpeeds.fromFieldRelativeSpeeds(ChassisSpeeds, getAllianceSpecificRotation())
    * @return the angle of the robot, if 0 degrees is away from your alliance wall
    */
-  private Rotation2d getAllianceSpecificRotation() {
-    double angle = DriverStation.getAlliance().get() == Alliance.Blue ? odometer.getEstimatedPosition().getRotation().getDegrees() : odometer.getEstimatedPosition().getRotation().getDegrees() + 180;
-    return Rotation2d.fromDegrees(angle);
-  }
+  
   /**
    * returns the pitch of the pigeon as a double
    * @return the pitch, returned as a double
@@ -255,6 +252,7 @@ public class DrivetrainSubsystem extends SubsystemBase {
    * Sets the gyroscope angle to zero.  
    */
   public void zeroGyroscope() {
+    System.out.println("Zeroed");
     if (DriverStation.getAlliance().isPresent()
         && DriverStation.getAlliance().get() == Alliance.Red) {
       setGyroscope(180);
@@ -318,6 +316,8 @@ public class DrivetrainSubsystem extends SubsystemBase {
    * @param chassisSpeeds the desired speed and direction
    */
   public void drive(ChassisSpeeds chassisSpeeds) {
+    SmartDashboard.putNumber("chassisSpeeds", chassisSpeeds.vxMetersPerSecond);
+
     if (Preferences.getBoolean("AntiTipActive", false)) {
       if (pigeon.getRoll().getValueAsDouble() > 3) {
         chassisSpeeds.vxMetersPerSecond = chassisSpeeds.vxMetersPerSecond

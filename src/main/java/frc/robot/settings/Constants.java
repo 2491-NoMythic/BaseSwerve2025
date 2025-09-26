@@ -41,19 +41,10 @@ public final class Constants {
     public static final int MIDDLE_LEFT_DIST_SENSOR_ID = 4;
     public static final int MIDDLE_RIGHT_DIST_SENSOR_ID = 3;
     public static final int FAR_RIGHT_DIST_SENSOR_ID = 1;
-    public static final  int ELEVATOR_SENSOR_ID = 2491;
-    public static final  int FUNNEL_SENSOR_ID = 2491;
-    public static final  int INTAKE_SENSOR_ID = 2491;
 
-    public static final double RANGE_TO_SEE_REEF_FLAT_SENSORS = 200; // in millimeters, the distance that will trigger the time of flight sensors to report that we are or aren't in front of the reef
-    public static final double RANGE_TO_SEE_REEF_ANGLED_SENSORS = 300; // in millimeters, the distance that will trigger the time of flight sensors to report that we are or aren't in front of the reef
-    public static final double RANGE_TO_SEE_REEF_ANGLED_AND_SPACED_SENSORS = 500; // in millimeters, the distance that will trigger the time of flight sensors to report that we are or aren't in front of the reef
-    public static final double SLOW_DOWN_RANGE = 1500;
 
   }
   public static final class DriveConstants {
-    public static final double REEF_LINEUP_SPEED = 0.6;
-    public static final double BUMPER_TO_SENSOR = 158; // in milliqmeters
     public static final Pose2d DRIVE_ODOMETRY_ORIGIN = new Pose2d(5.0, 5.0, new Rotation2d());
 
     public static final PIDController DRIVE_TO_POSE_X_CONTROLLER = getTranslationPIDController();
@@ -332,7 +323,7 @@ public final class Constants {
      *
      * <p>Left = -1 || Right = 1
      */
-    public static final int Z_AXIS = 2;
+    public static final int Z_AXIS = 4;
     /**
      * Right stick Z-rotate.
      *

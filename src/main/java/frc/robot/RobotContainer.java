@@ -21,7 +21,10 @@ import static frc.robot.settings.Constants.PS4Driver.Z_ROTATE;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.function.BooleanSupplier;
+import java.util.function.DoubleSupplier;
 
+import com.ctre.phoenix6.hardware.Pigeon2;
 import com.pathplanner.lib.auto.AutoBuilder;
 import com.pathplanner.lib.config.RobotConfig;
 import com.pathplanner.lib.controllers.PPHolonomicDriveController;
@@ -31,6 +34,7 @@ import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import edu.wpi.first.wpilibj.PS4Controller;
+import edu.wpi.first.wpilibj.XboxController;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
@@ -63,8 +67,12 @@ public class RobotContainer {
   private DrivetrainSubsystem drivetrain;
   private Drive defaultDriveCommand;
   private SendableChooser<Command> autoChooser;
-  private final PS4Controller driveController;
-  private final PS4Controller opController;
+  private final XboxController driveController;
+
+  DoubleSupplier ControllerForwardAxisSupplier;
+  DoubleSupplier ControllerSidewaysAxisSupplier;
+  DoubleSupplier ControllerZAxisSupplier;
+  BooleanSupplier ZeroGyroSup;
 
 
   public static HashMap<String, Command> eventMap;
@@ -73,29 +81,42 @@ public class RobotContainer {
     /**
      * The container for the robot. Contains subsystems, OI devices, and commands.
      */
-    driveController = new PS4Controller(0);
-    opController = new PS4Controller(1);
+    driveController = new XboxController(0);
     autoChooser = new SendableChooser<>();
     eventMap = new HashMap<>();
 
     drivetrain = new DrivetrainSubsystem();
-    // Set up the default command for the drivetrain.
-    // The controls are for field-oriented driving:
-    // Left stick Y axis -> Robot X movement, backward/forward
-    // Left stick X axis -> Robot Y movement, right/left
-    // Right stick Z axis -> rotation, clockwise, counterclockwise
-    // Need to invert the joystick axis
-    defaultDriveCommand = new Drive(
-        drivetrain,
-        () -> driveController.getL1Button(),
-        () -> modifyAxis(-driveController.getRawAxis(Y_AXIS), DEADBAND_NORMAL),
-        () -> modifyAxis(-driveController.getRawAxis(X_AXIS), DEADBAND_NORMAL),
-        () -> modifyAxis(-driveController.getRawAxis(Z_AXIS), DEADBAND_NORMAL));
+
+
+    //Drive controls
+    ControllerSidewaysAxisSupplier = () -> modifyAxis(-driveController.getRawAxis(X_AXIS), 0);
+    ControllerForwardAxisSupplier = () -> modifyAxis(-driveController.getRawAxis(Y_AXIS), 0);
+    ControllerZAxisSupplier = () -> modifyAxis(-driveController.getRawAxis(Z_AXIS), 0);
+    ZeroGyroSup = driveController::getAButton;
     drivetrain.setDefaultCommand(defaultDriveCommand);
+  
+
     SmartDashboard.putBoolean("use limelight", false);
     SmartDashboard.putBoolean("trust limelight", false);
     autoInit();
     configureBindings();
+
+    drivetrain = new DrivetrainSubsystem();
+
+    defaultDriveCommand = new Drive(
+        drivetrain,
+        () -> false,
+        ControllerForwardAxisSupplier,
+        ControllerSidewaysAxisSupplier,
+        ControllerZAxisSupplier);
+    drivetrain.setDefaultCommand(defaultDriveCommand);
+    new Trigger(ZeroGyroSup).onTrue(new InstantCommand(drivetrain::zeroGyroscope));
+    InstantCommand zeroGyroscope = new InstantCommand(drivetrain::zeroGyroscope) {
+    public boolean runsWhenDisabled() {
+        return true;
+      };
+    };
+  
   }
   private void configureDriveTrain() {
     try {
@@ -167,8 +188,13 @@ public class RobotContainer {
    * joysticks}.
    */
   private void configureBindings() {
-    new Trigger(driveController::getPSButton).onTrue(Commands.runOnce(drivetrain::zeroGyroscope, drivetrain));
-  }
+    InstantCommand setOffsets = new InstantCommand(drivetrain::setEncoderOffsets) {
+      public boolean runsWhenDisabled() {
+        return true;
+      };
+  };
+  SmartDashboard.putData("set offsets", setOffsets);
+}
   /**
    * Use this to pass the autonomous command to the main {@link Robot} class.
    *
@@ -194,5 +220,6 @@ public class RobotContainer {
   }
 
   public void teleopPeriodic() {
+    SmartDashboard.putNumber("RobotAngle", drivetrain.getGyroscopeRotation().getDegrees());
   }
 }
