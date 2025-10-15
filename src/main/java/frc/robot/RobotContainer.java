@@ -10,45 +10,32 @@ import static frc.robot.settings.Constants.DriveConstants.k_THETA_P;
 import static frc.robot.settings.Constants.DriveConstants.k_XY_D;
 import static frc.robot.settings.Constants.DriveConstants.k_XY_I;
 import static frc.robot.settings.Constants.DriveConstants.k_XY_P;
-import static frc.robot.settings.Constants.PS4Driver.DEADBAND_LARGE;
-import static frc.robot.settings.Constants.PS4Driver.DEADBAND_NORMAL;
-import static frc.robot.settings.Constants.PS4Driver.NO_INPUT;
 import static frc.robot.settings.Constants.PS4Driver.X_AXIS;
 import static frc.robot.settings.Constants.PS4Driver.Y_AXIS;
 import static frc.robot.settings.Constants.PS4Driver.Z_AXIS;
-import static frc.robot.settings.Constants.PS4Driver.Z_ROTATE;
 
 import java.io.IOException;
 import java.util.HashMap;
-import java.util.Map;
 import java.util.function.BooleanSupplier;
 import java.util.function.DoubleSupplier;
 
-import com.ctre.phoenix6.hardware.Pigeon2;
 import com.pathplanner.lib.auto.AutoBuilder;
 import com.pathplanner.lib.config.RobotConfig;
 import com.pathplanner.lib.controllers.PPHolonomicDriveController;
 
 import edu.wpi.first.math.MathUtil;
-import edu.wpi.first.math.geometry.Translation2d;
-import edu.wpi.first.wpilibj.DriverStation;
+import edu.wpi.first.wibj.DriverStation;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
-import edu.wpi.first.wpilibj.PS4Controller;
 import edu.wpi.first.wpilibj.XboxController;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
-import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
-import edu.wpi.first.wpilibj2.command.ParallelDeadlineGroup;
-import edu.wpi.first.wpilibj2.command.PrintCommand;
-import edu.wpi.first.wpilibj2.command.WaitCommand;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
 import frc.robot.Commands.Drive;
 import edu.wpi.first.wpilibj.Preferences;
 
-import frc.robot.settings.Constants;
 
 import frc.robot.subsystems.DrivetrainSubsystem;
 
@@ -166,22 +153,10 @@ public class RobotContainer {
    * {@link Constants.PS4Driver.NO_INPUT} (double = 404.0) if the joystick is at
    * rest position
    */
-  private double getJoystickDegrees(int horizontalAxis, int verticalAxis) {
-    double xAxis = MathUtil.applyDeadband(-driveController.getRawAxis(horizontalAxis), DEADBAND_LARGE);
-    double yAxis = MathUtil.applyDeadband(-driveController.getRawAxis(verticalAxis), DEADBAND_LARGE);
-    if (xAxis + yAxis != 0) {
-      return Math.toDegrees(Math.atan2(xAxis, yAxis));
-    }
-    return NO_INPUT;
-  }
+
   
 
   /** Takes both axis of a joystick, returns a double from 0-1 */
-  private double getJoystickMagnitude(int horizontalAxis, int verticalAxis) {
-    double xAxis = MathUtil.applyDeadband(-driveController.getRawAxis(horizontalAxis), DEADBAND_NORMAL);
-    double yAxis = MathUtil.applyDeadband(-driveController.getRawAxis(verticalAxis), DEADBAND_NORMAL);
-    return Math.min(1.0, (Math.sqrt(Math.pow(xAxis, 2) + Math.pow(yAxis, 2)))); // make sure the number is not greater than 1
-  }
 
   /**
    * Use this method to define your trigger->command mappings. Triggers can be

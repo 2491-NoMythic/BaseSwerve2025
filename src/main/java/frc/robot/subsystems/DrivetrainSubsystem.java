@@ -31,12 +31,10 @@ import static frc.robot.settings.Constants.DriveConstants.ROBOT_ANGLE_TOLERANCE;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.function.DoubleSupplier;
-import java.util.function.Supplier;
 
 // import java.util.logging.Logger;
 import org.littletonrobotics.junction.Logger;
 
-import com.ctre.phoenix6.controls.MotionMagicVelocityDutyCycle;
 import com.ctre.phoenix6.hardware.Pigeon2;
 import com.pathplanner.lib.util.PathPlannerLogging;
 
@@ -49,8 +47,6 @@ import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.kinematics.SwerveDriveKinematics;
 import edu.wpi.first.math.kinematics.SwerveModulePosition;
 import edu.wpi.first.math.kinematics.SwerveModuleState;
-import edu.wpi.first.util.datalog.DataLog;
-import edu.wpi.first.wpilibj.DataLogManager;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import edu.wpi.first.wpilibj.Preferences;
@@ -58,10 +54,7 @@ import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.smartdashboard.Field2d;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
-import frc.robot.LimelightHelpers;
-import frc.robot.Robot;
 import frc.robot.settings.Constants.DriveConstants;
-import frc.robot.settings.Constants;
 
 public class DrivetrainSubsystem extends SubsystemBase {
   //These are our swerve drive kinematics and Pigeon (gyroscope)
@@ -144,7 +137,6 @@ public class DrivetrainSubsystem extends SubsystemBase {
             Rotation2d.fromRotations(Preferences.getDouble("BR offset", 0)),
             CANIVORE_DRIVETRAIN);
 
-    DataLog log = DataLogManager.getLog();
     // configures the odometer
     odometer =
         new SwerveDrivePoseEstimator(
@@ -289,7 +281,6 @@ public class DrivetrainSubsystem extends SubsystemBase {
     }
   }
   /** Sets the modules speed and rotation to zero. */
-  //TODO: Make a version that works with States. 
   public void pointWheelsForward() {
     for (int i = 0; i < 4; i++) {
       setModule(i, new SwerveModuleState(0, new Rotation2d()));
