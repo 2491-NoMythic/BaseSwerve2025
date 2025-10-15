@@ -46,6 +46,7 @@ import edu.wpi.first.wpilibj2.command.WaitCommand;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
 import frc.robot.Commands.Drive;
+import edu.wpi.first.wpilibj.Preferences;
 
 import frc.robot.settings.Constants;
 
@@ -63,6 +64,7 @@ import frc.robot.subsystems.DrivetrainSubsystem;
  */
 public class RobotContainer {
   // The robot's subsystems and commands are defined here...
+  private boolean DrivetrainExists;
 
   private DrivetrainSubsystem drivetrain;
   private Drive defaultDriveCommand;
@@ -78,6 +80,13 @@ public class RobotContainer {
   public static HashMap<String, Command> eventMap;
 
   public RobotContainer() {
+    
+    Preferences.initBoolean("DrivetrainExists", true);
+
+    DrivetrainExists = true; //Preferences.getBoolean("DrivetrainExists", true);
+
+    
+
     /**
      * The container for the robot. Contains subsystems, OI devices, and commands.
      */
@@ -92,15 +101,21 @@ public class RobotContainer {
     ControllerSidewaysAxisSupplier = () -> modifyAxis(-driveController.getRawAxis(X_AXIS), 0);
     ControllerForwardAxisSupplier = () -> modifyAxis(-driveController.getRawAxis(Y_AXIS), 0);
     ControllerZAxisSupplier = () -> modifyAxis(-driveController.getRawAxis(Z_AXIS), 0);
-    ZeroGyroSup = driveController::getAButton;
+    ZeroGyroSup = driveController::getStartButton;
     drivetrain.setDefaultCommand(defaultDriveCommand);
-  
+
+    if (DrivetrainExists) {
+      driveTrainInst();
+      configureDriveTrain();
+    }
 
     SmartDashboard.putBoolean("use limelight", false);
     SmartDashboard.putBoolean("trust limelight", false);
     autoInit();
     configureBindings();
+  }
 
+  private void driveTrainInst() {
     drivetrain = new DrivetrainSubsystem();
 
     defaultDriveCommand = new Drive(
@@ -110,14 +125,8 @@ public class RobotContainer {
         ControllerSidewaysAxisSupplier,
         ControllerZAxisSupplier);
     drivetrain.setDefaultCommand(defaultDriveCommand);
-    new Trigger(ZeroGyroSup).onTrue(new InstantCommand(drivetrain::zeroGyroscope));
-    InstantCommand zeroGyroscope = new InstantCommand(drivetrain::zeroGyroscope) {
-    public boolean runsWhenDisabled() {
-        return true;
-      };
-    };
-  
   }
+
   private void configureDriveTrain() {
     try {
       AutoBuilder.configure(
@@ -144,6 +153,7 @@ public class RobotContainer {
       System.out.println("got IOException thrown trying to configure autobuilder " + b.getMessage());
     }
   }
+  
 
   private void autoInit() {
       configureDriveTrain();
@@ -188,13 +198,27 @@ public class RobotContainer {
    * joysticks}.
    */
   private void configureBindings() {
-    InstantCommand setOffsets = new InstantCommand(drivetrain::setEncoderOffsets) {
+
+    if (DrivetrainExists){
+      SmartDashboard.putData("drivetrain", drivetrain);
+      new Trigger(ZeroGyroSup).onTrue(new InstantCommand(drivetrain::zeroGyroscope));
+
+  InstantCommand setOffsets = new InstantCommand(drivetrain::setEncoderOffsets) {
       public boolean runsWhenDisabled() {
         return true;
       };
   };
+
+  InstantCommand zeroGyroscope = new InstantCommand(drivetrain::zeroGyroscope) {
+    public boolean runsWhenDisabled() {
+      return true;
+    };
+  };
+
+  SmartDashboard.putData("zeroGyroscope", zeroGyroscope);
   SmartDashboard.putData("set offsets", setOffsets);
 }
+  }
   /**
    * Use this to pass the autonomous command to the main {@link Robot} class.
    *
@@ -221,5 +245,6 @@ public class RobotContainer {
 
   public void teleopPeriodic() {
     SmartDashboard.putNumber("RobotAngle", drivetrain.getGyroscopeRotation().getDegrees());
+    SmartDashboard.putNumber("GetPose", drivetrain.getPose().getRotation().getDegrees());
   }
 }

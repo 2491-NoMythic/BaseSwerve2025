@@ -60,10 +60,8 @@ import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.LimelightHelpers;
 import frc.robot.Robot;
-
 import frc.robot.settings.Constants.DriveConstants;
 import frc.robot.settings.Constants;
-
 
 public class DrivetrainSubsystem extends SubsystemBase {
   //These are our swerve drive kinematics and Pigeon (gyroscope)
@@ -146,6 +144,7 @@ public class DrivetrainSubsystem extends SubsystemBase {
             Rotation2d.fromRotations(Preferences.getDouble("BR offset", 0)),
             CANIVORE_DRIVETRAIN);
 
+    DataLog log = DataLogManager.getLog();
     // configures the odometer
     odometer =
         new SwerveDrivePoseEstimator(
@@ -171,7 +170,10 @@ public class DrivetrainSubsystem extends SubsystemBase {
    * gets the angle of odometer reading, but adds 180 degrees if we are on red alliance. this is useful for whne using ChassisSpeeds.fromFieldRelativeSpeeds(ChassisSpeeds, getAllianceSpecificRotation())
    * @return the angle of the robot, if 0 degrees is away from your alliance wall
    */
-  
+  private Rotation2d getAllianceSpecificRotation() {
+    double angle = DriverStation.getAlliance().get() == Alliance.Blue ? odometer.getEstimatedPosition().getRotation().getDegrees() : odometer.getEstimatedPosition().getRotation().getDegrees() + 180;
+    return Rotation2d.fromDegrees(angle);
+  }
   /**
    * returns the pitch of the pigeon as a double
    * @return the pitch, returned as a double
@@ -252,7 +254,6 @@ public class DrivetrainSubsystem extends SubsystemBase {
    * Sets the gyroscope angle to zero.  
    */
   public void zeroGyroscope() {
-    System.out.println("Zeroed");
     if (DriverStation.getAlliance().isPresent()
         && DriverStation.getAlliance().get() == Alliance.Red) {
       setGyroscope(180);
@@ -303,21 +304,11 @@ public class DrivetrainSubsystem extends SubsystemBase {
     setModule(2, new SwerveModuleState(0, Rotation2d.fromDegrees(-45)));
     setModule(3, new SwerveModuleState(0, Rotation2d.fromDegrees(45)));
   }
-   /**
-   * Stops the robot. 
-   */
-  public void stop() {
-    for (int i = 0; i < 4; i++) {
-      modules[i].setDesiredState(new SwerveModuleState(0, lastAngles[i]));
-    }
-  }
   /**
    * The function that actually lets us drive the robot.
    * @param chassisSpeeds the desired speed and direction
    */
   public void drive(ChassisSpeeds chassisSpeeds) {
-    SmartDashboard.putNumber("chassisSpeeds", chassisSpeeds.vxMetersPerSecond);
-
     if (Preferences.getBoolean("AntiTipActive", false)) {
       if (pigeon.getRoll().getValueAsDouble() > 3) {
         chassisSpeeds.vxMetersPerSecond = chassisSpeeds.vxMetersPerSecond
@@ -349,5 +340,169 @@ public class DrivetrainSubsystem extends SubsystemBase {
     } else {
       setModuleStates(desiredStates);
     }
-}
+  }
+
+   /**
+   * A function that uses the drive method to drive the robot at specific speeds before scoring in L1. It uses the supplier to determine the sidewyas velocity to travel at. 
+   * @param L1Position the selected L1 placement, Far right, Middle right, Middle Left, or far left
+   */
+  /**
+   * Stops the robot. 
+   */
+  public void stop() {
+    for (int i = 0; i < 4; i++) {
+      modules[i].setDesiredState(new SwerveModuleState(0, lastAngles[i]));
+    }
+  }
+
+  //This is the odometry section
+  /**
+   * Updates the odometry
+   */
+  public void updateOdometry() {
+    odometer.updateWithTime(Timer.getFPGATimestamp(), getGyroscopeRotation(), getModulePositions());
+  }
+
+  /**
+   * Provide the odometry a vision pose estimate, only if there is a trustworthy pose available.
+   *
+   * <p>Each time a vision pose is supplied, the odometry pose estimation will change a little,
+   * larger pose shifts will take multiple calls to complete.
+   */
+  
+
+  /**
+   * Set the odometry using the current apriltag estimate, disregarding the pose trustworthyness.
+   *
+   * <p>You only need to run this once for it to take effect.
+   */
+ 
+  /** Prepares to rotate the robot to a specific angle. Angle 0 is ALWAYS facing away from blue alliance wall
+   * @param desiredAngle the angle to rotate the robot to (in degrees relative to the field)
+   */
+  public void setRotationTarget(double desiredAngle) {
+    rotationSpeedController.setSetpoint(desiredAngle);
+  }
+  public void setRotationTarget(DoubleSupplier desiredAngle) {
+    setRotationTarget(desiredAngle.getAsDouble());
+  }
+  /** Applies power to the motors to rotate the robot to the angle set by 
+   * {@link #setRotationTarget(double) setRotationTarget} <p>
+   * positive x is away from your alliance wall <p>
+   * positive y is to the drivers left
+   * @param vx the field relative speed, in meters per second, for the drivetrain to move
+   * @param vy the field relative speed, in meters per second, for the drivetrain to move
+   */
+  public void moveTowardsRotationTargetFieldRelative(double vx, double vy) {
+    drive(ChassisSpeeds.fromFieldRelativeSpeeds(new ChassisSpeeds(vx, vy, rotationSpeedController.calculate(getPose().getRotation().getDegrees())), getAllianceSpecificRotation()));
+  }
+  /** Applies power to the motors to rotate the robot to the angle set by 
+   * {@link #setRotationTarget(double) setRotationTarget} <p>
+   * positive x is away from robot forward
+   * positive y is robot left
+   * @param vx the field relative speed, in meters per second, for the drivetrain to move
+   * @param vy the field relative speed, in meters per second, for the drivetrain to move
+   */
+  public void moveTowardsRotationTargetRobotRelative(double vx, double vy) {
+    drive(new ChassisSpeeds(vx, vy, rotationSpeedController.calculate(getPose().getRotation().getDegrees())));
+  }
+  /**
+   * moves toward a position and rotation using {@link #moveTowardsRotationTargetFieldRelative(double, double)}. The position is set as if 0 degrees is away from
+   * the Blue alliance Wall, positive x is towards red alliance, and positive Y is to the left of the blue drivers
+   * @param pose
+   */
+  public void moveTowardsPose(Pose2d pose) {
+    //set the targets for the PID loops
+    setRotationTarget(pose.getRotation().getDegrees());
+    DRIVE_TO_POSE_X_CONTROLLER.setSetpoint(pose.getX());
+    DRIVE_TO_POSE_Y_CONTROLLER.setSetpoint(pose.getY());
+    //calculate speeds using PID loops
+    double xSpeed = DRIVE_TO_POSE_X_CONTROLLER.calculate(odometer.getEstimatedPosition().getX());
+    double ySpeed = DRIVE_TO_POSE_Y_CONTROLLER.calculate(odometer.getEstimatedPosition().getY());
+    SmartDashboard.putNumber("TARGETINGPOSE/calculatedyspeed", ySpeed);
+    SmartDashboard.putNumber("TARGETINGPOSE/calculatedxspeed", xSpeed);
+    
+    // reverse speeds for the red alliance, because directions have flipped
+    if(DriverStation.getAlliance().get() == Alliance.Red) {
+      xSpeed = -xSpeed;
+      ySpeed = -ySpeed;
+    }
+    SmartDashboard.putNumber("TARGETINGPOSE/adjustedyspeedAlliance", ySpeed);
+    SmartDashboard.putNumber("TARGETINGPOSE/adjustedxspeedAlliance", xSpeed);
+    //if the elevator is about to be up, limit the speed to 2 meters per second. Otherwise, limit speed to 3.5 meters per second
+  
+    SmartDashboard.putNumber("TARGETINGPOSE/yspeed", ySpeed);
+    SmartDashboard.putNumber("TARGETINGPOSE/xspeed", xSpeed);
+    //drive!
+    moveTowardsRotationTargetFieldRelative(xSpeed, ySpeed);
+  }
+  /**
+   * moves toward a position and rotation using the BARGE_POSE in constnats for red or blue alliance.
+   * @param pose
+   */
+ 
+  /**
+   * gets the total distance from the targeted pose and the robot's pose, by finding the hypotenuse of x error and y error <p>
+   * should only be called if {@link #moveTowardsPose(Pose2d)} is being run periodically, or else the error's will not be up to date with current robot position and current 
+   * targeted position
+   * @return the distance of error, in meters
+   */
+  public double getPositionTargetingError() {
+    double xError = DRIVE_TO_POSE_X_CONTROLLER.getError();
+    double yError = DRIVE_TO_POSE_Y_CONTROLLER.getError();
+    return Math.sqrt(Math.pow(xError, 2) + Math.pow(yError, 2));
+  }
+  /**
+   * gets the total distance from the x coordinate of the targeted pose and the robot's x coordinate, should only be called if {@link #moveTowardsPose(Pose2d)} is being run periodically, or else the error's will not be up to date with current robot position and current 
+   * targeted position
+   * @return the distance of error, in meters
+   */
+  public double getPositionTargetingErrorBarge() {
+    return DRIVE_TO_POSE_X_CONTROLLER.getError();
+  }
+  public boolean isAtRotationTarget() {
+    return rotationSpeedController.atSetpoint();
+  }
+  public boolean atProcessorAngle() {
+    return Math.abs(rotationSpeedController.getError()) < 3;
+  }
+  /*
+   * Logs important data for the drivetrain
+   */
+  private void logDrivetrainData(){
+    SmartDashboard.putNumber("TESTINGPOSE/total error", getPositionTargetingError());
+    SmartDashboard.putNumber("DRIVETRAIN/Robot Angle", getOdometryRotation().getDegrees());
+    SmartDashboard.putString("DRIVETRAIN/Robot Location", getPose().getTranslation().toString());
+    SmartDashboard.putNumber("DRIVETRAIN/forward speed", getChassisSpeeds().vxMetersPerSecond);
+    SmartDashboard.putNumber(
+        "DRIVETRAIN/rotational speed", Math.toDegrees(getChassisSpeeds().omegaRadiansPerSecond));
+    SmartDashboard.putNumber(
+        "DRIVETRAIN/gyroscope rotation degrees", getPose().getRotation().getDegrees());
+    SmartDashboard.putNumber(
+        "DRIVETRAIN/degrees per second", Math.toDegrees(getChassisSpeeds().omegaRadiansPerSecond));
+
+    Logger.recordOutput("MyStates", getModuleStates());
+    Logger.recordOutput("Position", odometer.getEstimatedPosition());
+    Logger.recordOutput("Gyro", getGyroscopeRotation());
+  }
+
+ 
+  //This is the things the subsystem does periodically. 
+  @Override
+  public void periodic() {
+    SmartDashboard.putNumber("pose2d X", getPose().getX());
+    SmartDashboard.putNumber("pose2d Y", getPose().getY());
+    updateOdometry();
+    // sets the robot orientation for each of the limelights, which is required for the
+   
+
+    m_field.setRobotPose(odometer.getEstimatedPosition());
+  
+    for (int i = 0; i < 4; i++) {
+      if(Preferences.getBoolean("Motor Logging", false)){
+      }
+    }
+    logDrivetrainData();
+  }
+
 }

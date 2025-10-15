@@ -35,15 +35,7 @@ import edu.wpi.first.math.kinematics.SwerveDriveKinematics;
 public final class Constants {
 
   private Constants() {}
-
-  public static final class SensorConstants {
-    public static final int FAR_LEFT_DIST_SENSOR_ID = 2;
-    public static final int MIDDLE_LEFT_DIST_SENSOR_ID = 4;
-    public static final int MIDDLE_RIGHT_DIST_SENSOR_ID = 3;
-    public static final int FAR_RIGHT_DIST_SENSOR_ID = 1;
-
-
-  }
+  
   public static final class DriveConstants {
     public static final Pose2d DRIVE_ODOMETRY_ORIGIN = new Pose2d(5.0, 5.0, new Rotation2d());
 
