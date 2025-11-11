@@ -90,9 +90,10 @@ public class RobotContainer {
     drivetrain.setDefaultCommand(defaultDriveCommand);
 
     if (DrivetrainExists) {
-      driveTrainInst();
+      driveTrainInit();
       configureDriveTrain();
     }
+
     if (LimelightExists) {
       limelightInit();
     }
@@ -103,7 +104,7 @@ public class RobotContainer {
     configureBindings();
   }
 
-  private void driveTrainInst() {
+  private void driveTrainInit() {
     drivetrain = new DrivetrainSubsystem();
 
     defaultDriveCommand = new Drive(

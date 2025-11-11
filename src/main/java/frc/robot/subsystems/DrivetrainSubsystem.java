@@ -44,6 +44,7 @@ import com.ctre.phoenix6.controls.MotionMagicVelocityDutyCycle;
 import com.ctre.phoenix6.hardware.Pigeon2;
 import com.pathplanner.lib.util.PathPlannerLogging;
 
+import edu.wpi.first.math.Pair;
 import edu.wpi.first.math.VecBuilder;
 import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.math.estimator.SwerveDrivePoseEstimator;
@@ -64,6 +65,7 @@ import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.LimelightHelpers;
 import frc.robot.Robot;
+import frc.robot.LogInputs.LimelightInputs;
 import frc.robot.LimelightHelpers.PoseEstimate;
 import frc.robot.helpers.MotorLogger;
 import frc.robot.helpers.MythicalMath;
@@ -97,7 +99,7 @@ public class DrivetrainSubsystem extends SubsystemBase {
   private final SwerveDrivePoseEstimator odometer;
   private final Field2d m_field = new Field2d();
 
-   Limelight limelight;
+  Limelight limelight;
   MotorLogger[] motorLoggers;
   PIDController speedController;
   PIDController rotationSpeedController;
@@ -396,7 +398,7 @@ public class DrivetrainSubsystem extends SubsystemBase {
     }
   }
 
- //This is the odometry section
+  // This is the odometry section
   /**
    * Updates the odometry
    */
@@ -405,9 +407,12 @@ public class DrivetrainSubsystem extends SubsystemBase {
   }
 
   /**
-   * Provide the odometry a vision pose estimate, only if there is a trustworthy pose available.
+   * Provide the odometry a vision pose estimate, only if there is a trustworthy
+   * pose available.
    *
-   * <p>Each time a vision pose is supplied, the odometry pose estimation will change a little,
+   * <p>
+   * Each time a vision pose is supplied, the odometry pose estimation will change
+   * a little,
    * larger pose shifts will take multiple calls to complete.
    */
   public void updateOdometryWithVision() {
@@ -436,37 +441,32 @@ public class DrivetrainSubsystem extends SubsystemBase {
         0,
         0);
 
-    PoseEstimate estimate = limelight.getTrustedPose();
+    Pair<Pose2d, LimelightInputs> estimate = limelight.getTrustedPose();
     if (estimate != null) {
       boolean doRejectUpdate = false;
       if (Math.abs(pigeon.getAngularVelocityZWorld().getValueAsDouble()) > 720) {
         doRejectUpdate = true;
       }
-      if (estimate.tagCount == 0) {
+      if (estimate.getSecond().tagCount == 0) {
         doRejectUpdate = true;
       }
       if (!doRejectUpdate) {
-        odometer.addVisionMeasurement(estimate.pose, estimate.timestampSeconds);
+        odometer.addVisionMeasurement(estimate.getFirst(), estimate.getSecond().timeStampSeconds);
         RobotState.getInstance().LimelightsUpdated = true;
       } else {
         RobotState.getInstance().LimelightsUpdated = false;
       }
-  }
-}
-  /**
-   * Set the odometry using the current apriltag estimate, disregarding the pose trustworthyness.
-   *
-   * <p>You only need to run this once for it to take effect.
-   */
-  public void forceUpdateOdometryWithVision() {
-    PoseEstimate estimate = limelight.getTrustedPose();
-    if (estimate != null) {
-      resetOdometry(estimate.pose);
-    } else {
-      System.err.println(
-          "No valid limelight estimate to reset from. (Drivetrain.forceUpdateOdometryWithVision)");
     }
   }
+
+  /**
+   * Set the odometry using the current apriltag estimate, disregarding the pose
+   * trustworthyness.
+   *
+   * <p>
+   * You only need to run this once for it to take effect.
+   */
+
   /**
    * Prepares to rotate the robot to a specific angle. Angle 0 is ALWAYS facing
    * away from blue alliance wall
@@ -627,11 +627,7 @@ public class DrivetrainSubsystem extends SubsystemBase {
     // sets the robot orientation for each of the limelights, which is required for
     // the
     if (Preferences.getBoolean("Use Limelight", false)) {
-      if (SmartDashboard.getBoolean("Vision/force use limelight", false)) {
-        forceUpdateOdometryWithVision();
-      } else {
-        updateOdometryWithVision();
-      }
+      updateOdometryWithVision();
     } else {
       RobotState.getInstance().LimelightsUpdated = false;
     }

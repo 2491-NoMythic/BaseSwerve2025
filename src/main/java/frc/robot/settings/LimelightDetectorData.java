@@ -4,7 +4,9 @@
 
 package frc.robot.settings;
 
-/** Contains the data from the Limelight Neural network object detection pipeline */
+/**
+ * Contains the data from the Limelight Neural network object detection pipeline
+ */
 public class LimelightDetectorData {
 
   public boolean isResultValid;
