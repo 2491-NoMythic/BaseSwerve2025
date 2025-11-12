@@ -18,7 +18,12 @@ import frc.robot.LimelightHelpers;
 import frc.robot.LimelightHelpers.PoseEstimate;
 import frc.robot.helpers.MythicalMath;
 
-/** Add your docs here. */
+/** 
+ * this class is an example of how, instead of using the {@code @AutoLog} tag, we can use {@code implements LoggableInputs} extension instead, 
+ * as long as we handle {@code toLog()} and {@code fromLog()} methods. these methods are used by the Logger class during the {@code ProcessInputs()} method. 
+ * all they have to do is put every input on the table (used while the real robot is on) and get every input from the table (used any time we want to use 
+ * an input)
+ */
 public class LimelightInputs implements LoggableInputs {
     public String name;
     public Pose2d megaTag2Pose2d;
