@@ -111,6 +111,7 @@ public class DrivetrainSubsystem extends SubsystemBase {
     rotationSpeedController = new PIDController(AUTO_AIM_ROBOT_kP, AUTO_AIM_ROBOT_kI, AUTO_AIM_ROBOT_kD);
     rotationSpeedController.setTolerance(ROBOT_ANGLE_TOLERANCE);
     rotationSpeedController.enableContinuousInput(-180, 180);
+    this.limelight = Limelight.getInstance();
     Preferences.initDouble("FL offset", 0);
     Preferences.initDouble("FR offset", 0);
     Preferences.initDouble("BL offset", 0);
@@ -156,7 +157,17 @@ public class DrivetrainSubsystem extends SubsystemBase {
         Rotation2d.fromRotations(Preferences.getDouble("BR offset", 0)),
         CANIVORE_DRIVETRAIN);
 
-    // configures the odometer
+    DataLog log = DataLogManager.getLog();
+        motorLoggers =
+            new MotorLogger[] {
+              new MotorLogger("/drivetrain/motorFL"),
+              new MotorLogger("/drivetrain/motorFR"),
+              new MotorLogger( "/drivetrain/motorBL"),
+              new MotorLogger("/drivetrain/motorBR"),
+            };
+
+    // configures the odometer/
+    updateInputs();
     odometer = new SwerveDrivePoseEstimator(
         kinematics, getGyroscopeRotation(), getModulePositions(), DRIVE_ODOMETRY_ORIGIN);
     odometer.setVisionMeasurementStdDevs(VecBuilder.fill(0.5, 0.5, 99999999));
