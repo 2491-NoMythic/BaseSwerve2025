@@ -80,14 +80,12 @@ public class RobotContainer {
     driveController = new XboxController(0);
     autoChooser = new SendableChooser<>();
     eventMap = new HashMap<>();
-    drivetrain = new DrivetrainSubsystem();
 
     // Drive controls
     ControllerSidewaysAxisSupplier = () -> modifyAxis(-driveController.getRawAxis(X_AXIS), 0);
     ControllerForwardAxisSupplier = () -> modifyAxis(-driveController.getRawAxis(Y_AXIS), 0);
     ControllerZAxisSupplier = () -> modifyAxis(-driveController.getRawAxis(Z_AXIS), 0);
     ZeroGyroSup = driveController::getStartButton;
-    drivetrain.setDefaultCommand(defaultDriveCommand);
 
     if (DrivetrainExists) {
       driveTrainInit();
