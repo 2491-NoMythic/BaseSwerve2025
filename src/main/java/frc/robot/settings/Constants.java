@@ -178,7 +178,7 @@ public final class Constants {
     public static final Rotation2d BR_STEER_OFFSET = Rotation2d.fromRotations(0.403809);
 
     // Drive Motor
-    public static final double k_DRIVE_P = 0.03;
+    public static final double k_DRIVE_P = 0.6;
     public static final double k_DRIVE_I = 0;
     public static final double k_DRIVE_D = 0;
     public static final double k_DRIVE_FF_S = 0;
@@ -239,9 +239,9 @@ public final class Constants {
       driveMotorConfig.MotorOutput.Inverted = DriveConstants.DRIVETRAIN_DRIVE_INVERTED;
       driveMotorConfig.MotorOutput.DutyCycleNeutralDeadband = 0.0;
       driveMotorConfig.ClosedLoopRamps.DutyCycleClosedLoopRampPeriod = DriveConstants.DRIVE_MOTOR_RAMP;
-      driveMotorConfig.Slot0.kP = DriveConstants.k_DRIVE_P * 12;
-      driveMotorConfig.Slot0.kI = DriveConstants.k_DRIVE_I * 12;
-      driveMotorConfig.Slot0.kD = DriveConstants.k_DRIVE_D * 12;
+      driveMotorConfig.Slot0.kP = DriveConstants.k_DRIVE_P;
+      driveMotorConfig.Slot0.kI = DriveConstants.k_DRIVE_I;
+      driveMotorConfig.Slot0.kD = DriveConstants.k_DRIVE_D;
       driveMotorConfig.Slot0.kS = DriveConstants.k_DRIVE_FF_S;
       driveMotorConfig.Slot0.kV = DriveConstants.k_DRIVE_FF_V;
       // TODO: ADD DUPLICATE CONSTANTS
